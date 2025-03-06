@@ -40,10 +40,7 @@ def send_photo(chat_id, photo_file, caption=""):
 
 
 def process_image(image_bytes):
-    # باز کردن تصویر از بایت
     input_image = Image.open(io.BytesIO(image_bytes))
-    # تنظیم اندازه عکس برای کاهش مصرف حافظه (مثلاً حداکثر عرض/ارتفاع 800 پیکسل)
-    # حذف پس‌زمینه با rembg
     output_image = remove(input_image)
     img_byte_arr = io.BytesIO()
     output_image.save(img_byte_arr, format="PNG")
