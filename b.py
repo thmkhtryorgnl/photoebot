@@ -7,83 +7,64 @@ from rembg import remove
 TOKEN = "2005645682:9KcdD3ItRLVGrQAHfoA5I3G9hcGoMOVj1JADyFon"
 BASE_URL = f"https://tapi.bale.ai/bot{TOKEN}"
 
-
 def get_updates(offset=None):
     url = f"{BASE_URL}/getUpdates"
-    params = {}
-    if offset:
-        params["offset"] = offset
-    response = requests.get(url, params=params)
-    return response.json()
-
+    params = {"offset": offset} if offset else {}
+    return requests.get(url, params=params).json()
 
 def download_file(file_id):
     url = f"{BASE_URL}/getFile"
-    params = {"file_id": file_id}
-    resp = requests.get(url, params=params)
-    result = resp.json()
+    result = requests.get(url, params={"file_id": file_id}).json()
     if result.get("ok"):
-        file_path = result["result"]["file_path"]
-        download_url = f"https://tapi.bale.ai/file/bot{TOKEN}/{file_path}"
-        file_resp = requests.get(download_url)
-        if file_resp.status_code == 200:
-            return file_resp.content
+        download_url = f"https://tapi.bale.ai/file/bot{TOKEN}/{result['result']['file_path']}"
+        return requests.get(download_url).content
     return None
-
 
 def send_photo(chat_id, photo_file, caption=""):
     url = f"{BASE_URL}/sendPhoto"
     data = {"chat_id": chat_id, "caption": caption}
-    files = {"photo": photo_file}
-    response = requests.post(url, data=data, files=files)
-    return response.json()
-
+    return requests.post(url, data=data, files={"photo": photo_file}).json()
 
 def process_image(image_bytes):
-    input_image = Image.open(io.BytesIO(image_bytes))
-    output_image = remove(input_image)
-    img_byte_arr = io.BytesIO()
-    output_image.save(img_byte_arr, format="PNG")
-    img_byte_arr.seek(0)
-    return img_byte_arr
-
+    image = Image.open(io.BytesIO(image_bytes))
+    output = remove(image)
+    img_bytes = io.BytesIO()
+    output.save(img_bytes, format="PNG")
+    img_bytes.seek(0)
+    return img_bytes
 
 def send_message(chat_id, text):
     url = f"{BASE_URL}/sendMessage"
     payload = {"chat_id": chat_id, "text": text}
-    response = requests.post(url, json=payload)
-    return response.json()
-
+    return requests.post(url, json=payload).json()
 
 offset = None
 while True:
     updates = get_updates(offset)
     if updates.get("ok"):
-        for update in updates.get("result", []):
+        for update in updates["result"]:
             offset = update["update_id"] + 1
             message = update.get("message")
-            if message:
-                text = message.get("text", "")
-            if text.strip == "/start":
-                chat_id = message["chat"]["id"]
-                send_message(chat_id, "سلام! برای حذف پسزمینه عکس بفرستید.")
             if not message:
                 continue
+
             chat_id = message["chat"]["id"]
+            if message.get("text", "").strip() == "/start":
+                send_message(chat_id, "سلام! برای حذف پس‌زمینه، عکس بفرستید.")
+
             if "photo" in message:
-                photo_list = message["photo"]
-                target_photo = sorted(
-                    photo_list, key=lambda x: x.get("file_size", 0), reverse=True
-                )[0]
-                file_id = target_photo["file_id"]
-                image_data = download_file(file_id)
+                photos = message["photo"]
+                send_message(chat_id, "✅ در حال پردازش تصویر...")
+                best_photo = max(photos, key=lambda x: x.get("file_size", 0))
+
+                image_data = download_file(best_photo["file_id"])
                 if image_data:
                     try:
-                        processed_image = process_image(image_data)
-                        response = send_photo(
-                            chat_id, processed_image, caption="پس‌زمینه عکس حذف شده است"
-                        )
-                        print("ارسال عکس با موفقیت:", response)
+                        result_image = process_image(image_data)
+                        send_photo(chat_id, result_image, caption="✅ پس‌زمینه عکس حذف شد!")
                     except Exception as e:
-                        print("خطا در پردازش عکس:", e)
-    time.sleep(2)
+                        send_message(chat_id, "❌ خطایی در پردازش تصویر رخ داد!")
+                        print("خطا در پردازش تصویر:", e)
+
+    time.sleep(5)
+
