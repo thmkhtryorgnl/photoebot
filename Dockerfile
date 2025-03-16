@@ -12,5 +12,5 @@ COPY . .
 ENV PYTHONIOENCODING=utf-8 \
     LANG=C.UTF-8
 
-CMD ["python", "bot.py"]
+CMD ["python", "b.py"]
 
