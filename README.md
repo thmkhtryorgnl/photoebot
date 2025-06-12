@@ -1,2 +1,2 @@
 # photoebot
-my balebot
+my balebot for remove background photos.
