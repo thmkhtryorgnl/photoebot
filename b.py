@@ -4,7 +4,7 @@ import io
 from PIL import Image
 from rembg import remove
 
-TOKEN = "2005645682:9KcdD3ItRLVGrQAHfoA5I3G9hcGoMOVj1JADyFon"
+TOKEN = "Your bale token from botfather"
 BASE_URL = f"https://tapi.bale.ai/bot{TOKEN}"
 
 def get_updates(offset=None):
